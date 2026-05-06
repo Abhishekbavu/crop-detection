@@ -21,17 +21,6 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# ✅ FIXED DATABASE PATH FOR RAILWAY
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-
-db_folder = os.path.join(BASE_DIR, "data")
-os.makedirs(db_folder, exist_ok=True)
-
-db_path = os.path.join(db_folder, "database.db")
-
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
 db = SQLAlchemy(app)
 
 # ==================== Global Variables ====================
@@ -218,6 +207,7 @@ def login():
         if user and user.check_password(request.form['password']):
             session['user_id'] = user.id
             return redirect(url_for('dashboard'))
+        flash("Invalid credentials", "danger")
     return render_template('login.html')
 
 
@@ -238,12 +228,25 @@ def logout():
 def disease_detection():
     if request.method == 'POST':
         file = request.files['plant_image']
-        if file:
-            filename = secure_filename(file.filename)
-            path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(path)
-            result = predict_disease(path)
-            return render_template('result.html', prediction=result)
+
+        if not file or file.filename == '':
+            flash("No file selected", "warning")
+            return redirect(request.url)
+
+        if not allowed_file(file.filename):
+            flash("Invalid file type", "danger")
+            return redirect(request.url)
+
+        if disease_model is None:
+            return "Model not loaded", 500
+
+        filename = str(datetime.utcnow().timestamp()) + "_" + secure_filename(file.filename)
+        path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(path)
+
+        result = predict_disease(path)
+        return render_template('result.html', prediction=result)
+
     return render_template('disease.html')
 
 
