@@ -10,14 +10,19 @@ class Config:
 
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
 
-    # ✅ FIX: Use Railway DATABASE_URL if available, else fallback to SQLite
+    # ================= DATABASE =================
     DATABASE_URL = os.environ.get("DATABASE_URL")
 
     if DATABASE_URL:
-        # Railway gives postgres:// but SQLAlchemy needs postgresql://
+        # Fix for Railway postgres URL
         SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace("postgres://", "postgresql://")
+
+        # ✅ Ensure SSL works (important for Railway)
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_pre_ping": True,
+        }
     else:
-        # Local fallback (works on your PC)
+        # Local fallback
         SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db')
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -79,5 +84,4 @@ class Config:
             'treatment': 'Chlorothalonil, Mancozeb, Azoxystrobin',
             'risk': 'Medium'
         }
-        # (you can keep rest same — shortened here)
     }
