@@ -21,6 +21,17 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# ✅ FIXED DATABASE PATH FOR RAILWAY
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+db_folder = os.path.join(BASE_DIR, "data")
+os.makedirs(db_folder, exist_ok=True)
+
+db_path = os.path.join(db_folder, "database.db")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 db = SQLAlchemy(app)
 
 # ==================== Global Variables ====================
